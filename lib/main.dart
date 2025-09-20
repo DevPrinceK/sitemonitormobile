@@ -17,7 +17,7 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp();
   } catch (_) {
-    // Firebase not configured yet; ignore for dev bootstrap
+    // Firebase not configured yet; continue without notifications
   }
   await Hive.initFlutter();
   await Hive.openBox('sites');
@@ -54,6 +54,7 @@ class _SiteMonitorAppState extends State<SiteMonitorApp> {
 
     _themeProvider = ThemeProvider();
     _notificationProvider = NotificationProvider();
+    // Attach notification service even if Firebase may be absent; service guards itself
     _notificationProvider.attachService(NotificationService(api));
 
     _bootstrap();
