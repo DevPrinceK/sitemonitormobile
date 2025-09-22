@@ -5,12 +5,6 @@ import '../providers/auth_provider.dart';
 import 'auth/login_screen.dart';
 import 'tabs_root_screen.dart';
 
-/// A high-fidelity animated splash screen featuring:
-/// 1. Animated radial gradient background (subtle hue shift & rotation illusion)
-/// 2. Pulsating concentric "radar" rings (expand + fade)
-/// 3. Logo glyph path draw animation (custom painter)
-/// 4. Scale + fade entrance of app title
-/// 5. Timed navigation after sequence completes (~2.4s)
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,6 +18,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _ringsCtrl;
   late final AnimationController _logoCtrl;
   late final AnimationController _titleCtrl;
+  late final AnimationController _breathCtrl;
 
   @override
   void initState() {
@@ -39,6 +34,9 @@ class _SplashScreenState extends State<SplashScreen>
       ..forward();
     _titleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
+    _breathCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2600))
+      ..repeat(reverse: true);
 
     // Stagger title appearance after logo mostly drawn
     Future.delayed(const Duration(milliseconds: 900), () {
@@ -64,6 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
     _ringsCtrl.dispose();
     _logoCtrl.dispose();
     _titleCtrl.dispose();
+    _breathCtrl.dispose();
     super.dispose();
   }
 
@@ -103,65 +102,58 @@ class _SplashScreenState extends State<SplashScreen>
             child: IgnorePointer(
               child: AnimatedBuilder(
                 animation: _ringsCtrl,
-                builder: (context, _) {
-                  return CustomPaint(
-                    painter: _RingsPainter(
-                        _ringsCtrl.value,
-                        Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withOpacity(0.15)),
-                  );
-                },
+                builder: (context, _) => CustomPaint(
+                  painter: _RingsPainter(
+                    _ringsCtrl.value,
+                    Theme.of(context).colorScheme.onPrimary.withOpacity(0.15),
+                  ),
+                ),
               ),
             ),
           ),
-          // Center content
+          // Center content (logo + title)
+          // Center logo drawing only
           Center(
-            child: SizedBox(
-              width: 200,
-              height: 200,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Logo path drawing
-                  AnimatedBuilder(
-                    animation: _logoCtrl,
-                    builder: (context, _) => CustomPaint(
-                      size: const Size(140, 140),
-                      painter: _LogoPainter(
-                          progress:
-                              Curves.easeOutCubic.transform(_logoCtrl.value),
-                          color: colorScheme.onPrimary),
+            child: AnimatedBuilder(
+              animation: _logoCtrl,
+              builder: (context, _) => CustomPaint(
+                size: const Size(140, 140),
+                painter: _LogoPainter(
+                  progress: Curves.easeOutCubic.transform(_logoCtrl.value),
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+          // Bottom breathing app title
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 48,
+            child: AnimatedBuilder(
+              animation: _breathCtrl,
+              builder: (context, _) {
+                // Use a smooth sinusoidal curve for breathing effect
+                final t = _breathCtrl.value; // 0..1
+                final wave = (math.sin((t * 2 * math.pi)) + 1) / 2; // 0..1
+                final scale = 0.94 + wave * 0.06; // 0.94 - 1.00
+                final opacity = 0.65 + wave * 0.35; // 0.65 - 1.0
+                return Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Text(
+                      'Site Monitor',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.1,
+                            color: colorScheme.onPrimary,
+                          ),
                     ),
                   ),
-                  // Title fade + scale
-                  AnimatedBuilder(
-                    animation: _titleCtrl,
-                    builder: (context, _) {
-                      final p = Curves.easeOutBack.transform(_titleCtrl.value);
-                      return Opacity(
-                        opacity: p,
-                        child: Transform.scale(
-                          scale: 0.8 + 0.2 * p,
-                          child: Text(
-                            'Site Monitor',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
-                                  color: colorScheme.onPrimary,
-                                ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],

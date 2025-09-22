@@ -84,6 +84,7 @@ class _SiteMonitorAppState extends State<SiteMonitorApp> {
           return MaterialApp(
             title: 'Site Monitor',
             themeMode: theme.themeMode,
+            debugShowCheckedModeBanner: false,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
               useMaterial3: true,
